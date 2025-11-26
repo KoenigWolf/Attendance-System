@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 勤怠管理システム
 
-## Getting Started
+Next.js 16 + Supabase で構築された次世代勤怠管理システム。
 
-First, run the development server:
+## 機能
+
+- **打刻管理**: 出勤・退勤・休憩の打刻（楽観的UI更新で即時反映）
+- **勤怠履歴**: 月別の勤怠履歴・サマリ表示
+- **申請管理**: 休暇申請・残業申請の作成・承認フロー
+- **管理者機能**: 社員管理・部門管理・レポート出力
+
+## 技術スタック
+
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript
+- **Backend**: Supabase (PostgreSQL, Auth, RLS)
+- **Styling**: CSS Modules
+
+## セットアップ
 
 ```bash
+# 依存関係のインストール
+npm install
+
+# 環境変数の設定
+cp .env.local.example .env.local
+# .env.local に Supabase の URL と ANON KEY を設定
+
+# 開発サーバーの起動
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 環境変数
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ディレクトリ構成
 
-## Learn More
+```
+src/
+├── app/
+│   ├── (auth)/           # 認証関連ページ
+│   │   └── login/
+│   └── (authenticated)/  # 認証必須ページ
+│       ├── attendance/   # 打刻・勤怠履歴
+│       ├── dashboard/    # ダッシュボード
+│       ├── requests/     # 申請管理
+│       └── admin/        # 管理者機能
+├── components/           # UIコンポーネント
+├── lib/
+│   ├── supabase/         # Supabaseクライアント
+│   └── utils.ts          # ユーティリティ関数
+└── types/                # 型定義
+```
 
-To learn more about Next.js, take a look at the following resources:
+## パフォーマンス最適化
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Server Components によるデータプリフェッチ
+- Promise.all によるクエリ並列化
+- 楽観的UI更新による即時フィードバック
+- React.memo / useMemo / useCallback による再レンダリング最適化
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ライセンス
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
