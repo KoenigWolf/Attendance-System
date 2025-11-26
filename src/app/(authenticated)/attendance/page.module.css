@@ -1,0 +1,158 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dateTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.clock {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem 0;
+  background: linear-gradient(135deg, var(--primary-lighter) 0%, var(--secondary) 100%);
+  border-radius: var(--radius-xl);
+}
+
+.time {
+  font-family: var(--font-mono), 'SF Mono', monospace;
+  font-size: 4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.seconds {
+  font-family: var(--font-mono), 'SF Mono', monospace;
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.punchButton {
+  flex: 1;
+  height: 4rem !important;
+  font-size: 1.125rem !important;
+}
+
+.breakButtons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.breakButtons button {
+  flex: 1;
+}
+
+.records {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.record {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  background: var(--secondary);
+  border-radius: var(--radius-lg);
+  transition: background var(--transition);
+}
+
+.record:hover {
+  background: var(--secondary-hover);
+}
+
+.recordType {
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.recordTime {
+  font-family: var(--font-mono), 'SF Mono', monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.noRecords {
+  text-align: center;
+  color: var(--muted);
+  padding: 2rem 0;
+  font-size: 0.9375rem;
+}
+
+.statusCard {
+  margin-top: 1.5rem;
+}
+
+.statusGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  text-align: center;
+}
+
+.statusItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--secondary);
+  border-radius: var(--radius-lg);
+}
+
+.statusLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statusValue {
+  font-family: var(--font-mono), 'SF Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
