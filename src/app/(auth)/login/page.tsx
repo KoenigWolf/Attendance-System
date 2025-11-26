@@ -1,12 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { checkRateLimit, validate } from '@/lib/security'
 import styles from './page.module.css'
+
+const LOGIN_RATE_LIMIT = {
+  maxAttempts: 5,
+  windowMs: 5 * 60 * 1000, // 5分間に5回まで
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -14,28 +20,65 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isLocked, setIsLocked] = useState(false)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError('')
 
-    const supabase = createClient()
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError('メールアドレスまたはパスワードが正しくありません')
-      setIsLoading(false)
+    // 入力バリデーション
+    const emailValidation = validate(email, 'email')
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error || '入力エラー')
       return
     }
 
-    router.push('/dashboard')
-    router.refresh()
-  }
+    if (!password || password.length < 1) {
+      setError('パスワードを入力してください')
+      return
+    }
+
+    // レート制限チェック
+    const rateLimit = checkRateLimit(`login:${email}`, LOGIN_RATE_LIMIT)
+    if (!rateLimit.allowed) {
+      const minutes = Math.ceil(rateLimit.resetInMs / 60000)
+      setError(`ログイン試行回数が上限に達しました。${minutes}分後に再試行してください`)
+      setIsLocked(true)
+
+      // ロックアウト解除タイマー
+      setTimeout(() => {
+        setIsLocked(false)
+      }, rateLimit.resetInMs)
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const supabase = createClient()
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      })
+
+      if (authError) {
+        const remaining = rateLimit.remainingAttempts
+        if (remaining <= 2) {
+          setError(`認証に失敗しました（残り${remaining}回）`)
+        } else {
+          setError('メールアドレスまたはパスワードが正しくありません')
+        }
+        setIsLoading(false)
+        return
+      }
+
+      router.push('/dashboard')
+      router.refresh()
+    } catch {
+      setError('ログイン処理中にエラーが発生しました')
+      setIsLoading(false)
+    }
+  }, [email, password, router])
 
   return (
     <div className={styles.container}>
@@ -54,6 +97,8 @@ export default function LoginPage() {
               placeholder="email@example.com"
               required
               autoComplete="email"
+              maxLength={255}
+              disabled={isLocked}
             />
             <Input
               id="password"
@@ -64,10 +109,17 @@ export default function LoginPage() {
               placeholder="パスワード"
               required
               autoComplete="current-password"
+              maxLength={128}
+              disabled={isLocked}
             />
             {error && <p className={styles.error}>{error}</p>}
-            <Button type="submit" isLoading={isLoading} className={styles.button}>
-              ログイン
+            <Button
+              type="submit"
+              isLoading={isLoading}
+              disabled={isLocked}
+              className={styles.button}
+            >
+              {isLocked ? `ロック中...` : 'ログイン'}
             </Button>
           </form>
         </CardContent>

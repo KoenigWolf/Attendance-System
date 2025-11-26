@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { VALIDATION_RULES, sanitize } from '@/lib/security'
 import type { RequestType, LeaveType } from '@/types/database'
 import styles from './page.module.css'
+
+const MAX_REASON_LENGTH = VALIDATION_RULES.reason.maxLength
 
 export default function NewRequestPage() {
   const router = useRouter()
@@ -22,6 +25,8 @@ export default function NewRequestPage() {
     reason: '',
     leave_type: 'paid' as LeaveType,
   })
+
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const fetchEmployee = async () => {
@@ -39,32 +44,67 @@ export default function NewRequestPage() {
     fetchEmployee()
   }, [])
 
+  const validateForm = useCallback((): boolean => {
+    const errors: Record<string, string> = {}
+
+    // 開始日チェック
+    if (!formData.start_date) {
+      errors.start_date = '開始日は必須です'
+    }
+
+    // 終了日チェック（指定された場合は開始日以降か）
+    if (formData.end_date && formData.start_date) {
+      if (new Date(formData.end_date) < new Date(formData.start_date)) {
+        errors.end_date = '終了日は開始日以降を指定してください'
+      }
+    }
+
+    // 理由チェック
+    if (!formData.reason.trim()) {
+      errors.reason = '申請理由は必須です'
+    } else if (formData.reason.length > MAX_REASON_LENGTH) {
+      errors.reason = VALIDATION_RULES.reason.message
+    }
+
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }, [formData])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!employeeId) return
 
-    setIsLoading(true)
-    setError('')
-
-    const supabase = createClient()
-
-    const { error: insertError } = await supabase.from('requests').insert({
-      employee_id: employeeId,
-      request_type: formData.request_type,
-      start_date: formData.start_date,
-      end_date: formData.end_date || formData.start_date,
-      reason: formData.reason,
-      leave_type: formData.request_type === 'leave' ? formData.leave_type : null,
-    })
-
-    if (insertError) {
-      setError('申請の登録に失敗しました')
-      setIsLoading(false)
+    if (!validateForm()) {
       return
     }
 
-    router.push('/requests')
-    router.refresh()
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const supabase = createClient()
+
+      const { error: insertError } = await supabase.from('requests').insert({
+        employee_id: employeeId,
+        request_type: formData.request_type,
+        start_date: formData.start_date,
+        end_date: formData.end_date || formData.start_date,
+        reason: sanitize(formData.reason),
+        leave_type: formData.request_type === 'leave' ? formData.leave_type : null,
+      })
+
+      if (insertError) {
+        setError('申請の登録に失敗しました')
+        setIsLoading(false)
+        return
+      }
+
+      router.push('/requests')
+      router.refresh()
+    } catch {
+      setError('申請処理中にエラーが発生しました')
+      setIsLoading(false)
+    }
   }
 
   const requestTypeLabels: Record<RequestType, string> = {
@@ -80,6 +120,8 @@ export default function NewRequestPage() {
     sick: '病欠',
     special: '特別休暇',
   }
+
+  const remainingChars = MAX_REASON_LENGTH - formData.reason.length
 
   return (
     <div className={styles.container}>
@@ -139,42 +181,60 @@ export default function NewRequestPage() {
             )}
 
             <div className={styles.dateRange}>
-              <Input
-                id="start_date"
-                type="date"
-                label="開始日"
-                value={formData.start_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, start_date: e.target.value })
-                }
-                required
-              />
-              <Input
-                id="end_date"
-                type="date"
-                label="終了日"
-                value={formData.end_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, end_date: e.target.value })
-                }
-              />
+              <div>
+                <Input
+                  id="start_date"
+                  type="date"
+                  label="開始日"
+                  value={formData.start_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, start_date: e.target.value })
+                  }
+                  required
+                />
+                {validationErrors.start_date && (
+                  <p className={styles.fieldError}>{validationErrors.start_date}</p>
+                )}
+              </div>
+              <div>
+                <Input
+                  id="end_date"
+                  type="date"
+                  label="終了日"
+                  value={formData.end_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, end_date: e.target.value })
+                  }
+                  min={formData.start_date}
+                />
+                {validationErrors.end_date && (
+                  <p className={styles.fieldError}>{validationErrors.end_date}</p>
+                )}
+              </div>
             </div>
 
             <div className={styles.field}>
               <label htmlFor="reason" className={styles.label}>
                 申請理由
+                <span className={styles.charCount}>
+                  {remainingChars < 50 && `残り${remainingChars}文字`}
+                </span>
               </label>
               <textarea
                 id="reason"
-                className={styles.textarea}
+                className={`${styles.textarea} ${validationErrors.reason ? styles.textareaError : ''}`}
                 value={formData.reason}
                 onChange={(e) =>
                   setFormData({ ...formData, reason: e.target.value })
                 }
                 required
                 rows={4}
+                maxLength={MAX_REASON_LENGTH}
                 placeholder="申請理由を入力してください"
               />
+              {validationErrors.reason && (
+                <p className={styles.fieldError}>{validationErrors.reason}</p>
+              )}
             </div>
 
             {error && <p className={styles.error}>{error}</p>}

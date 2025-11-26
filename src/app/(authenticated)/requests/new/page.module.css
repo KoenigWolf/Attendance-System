@@ -66,6 +66,27 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.textareaError {
+  border-color: var(--danger);
+}
+
+.textareaError:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.fieldError {
+  color: var(--danger);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.charCount {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-left: 0.5rem;
+  font-weight: 400;
+}
+
 .error {
   color: var(--danger);
   font-size: 0.875rem;
